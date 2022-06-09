@@ -1,0 +1,233 @@
+<!--Wykonanie: Piotr Koryś-->
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <title>Snake</title>
+    <meta charset="utf-8">
+
+    <style>
+        #main {
+            background-color: white;
+            width: 640px;
+            height: 480px;
+            margin: auto;
+            border: 1px solid black;
+        }
+
+        #points {
+            width: 100%;
+            text-align: center;
+            font-size: 50px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+    </style>
+
+    <script>
+        var canvas;
+        var ctx;
+        var point;
+        var point_x;
+        var point_y;
+        var points_collected = 0;
+        var pos_x = 250;
+        var pos_y = 300;
+        var direction = [25, 0];
+        var welcome_screen = true;
+        var is_point_on_map = true;
+        var interval;
+        var body = [];
+        var body_cords = [[]];
+        var interval_time = 500;
+        var interval_multipiler = 0.9;
+        var was_moven_in_frame = false;
+
+        function draw_head() {
+            ctx.save();
+            ctx.fillStyle = 'rgba(255,0,0,1)';
+            ctx.translate(pos_x += direction[0], pos_y += direction[1]);
+            ctx.fillRect(0, 0, 25, 25);
+            ctx.restore();
+        }
+
+        function draw_point() {
+            point.save();
+            point.fillStyle = 'rgba(0,255,0,1)';
+            point.translate(point_x, point_y);
+            point.fillRect(0, 0, 25, 25);
+            point.restore();
+        }
+
+        function set_point_cords() {
+            point_x = parseInt(Math.random() * 580) + 20;
+            point_y = parseInt(Math.random() * 440) + 20;
+            point_x = Math.round(point_x / 25) * 25;
+            point_y = Math.round(point_y / 25) * 25;
+        }
+
+        function set_body_cords() {
+            new_cords = new Array(points_collected);
+            new_cords[0] = [pos_x, pos_y];
+            for (var i = 0; i < points_collected - 1; i++) {
+                new_cords[i + 1] = [0, 0];
+                new_cords[i + 1][0] = body_cords[i][0];
+                new_cords[i + 1][1] = body_cords[i][1];
+            }
+            return new_cords;
+        }
+
+        function draw_body() {
+            body = new Array(points_collected);
+            body_cords = set_body_cords();
+
+            for (var i = 0; i < points_collected; i++) {
+                body[i] = canvas.getContext("2d");
+                body[i].save();
+                // body[i].fillStyle = document.getElementById("snake-color").value;
+                body[i].fillStyle = "orange";
+                body[i].translate(body_cords[i][0], body_cords[i][1]);
+                body[i].fillRect(0, 0, 25, 25);
+                body[i].restore();
+            }
+        }
+
+        function redraw() {
+            ctx.clearRect(0, 0, 640, 480);
+            draw_body();
+
+            draw_head();
+            if (is_player_hit_smth()) {
+                clearInterval(interval);
+                ctx.fillText("GAME OVER!", 320, 240);
+                end_game();
+            }
+            if (point_x == pos_x && point_y == pos_y) {
+                is_point_on_map = false;
+                document.getElementById("points").innerHTML = ++points_collected;
+                clearInterval(interval);
+                interval = window.setInterval(redraw, interval_time *= interval_multipiler);
+                console.log(interval_time + "ms")
+
+            }
+            if (!is_point_on_map) {
+                set_point_cords();
+                is_point_on_map = true;
+            }
+            draw_point();
+            was_moven_in_frame = false;
+        }
+
+        function is_player_hit_smth() {
+            for (var i = 0; i < body_cords.length; i++)
+                if (body_cords[i][0] == pos_x && body_cords[i][1] == pos_y)
+                    return true;
+
+            return pos_x > 620 || pos_x < 5 || pos_y < 0 || pos_y > 450
+        }
+
+        function init() {
+            window.addEventListener("keydown", keyListener, false);
+            canvas = document.getElementById("game");
+            ctx = canvas.getContext("2d");
+            point = canvas.getContext("2d");
+            point.textAlign = "center";
+            ctx.font = "48px sans-sarif";
+            ctx.textAlign = "center";
+            ctx.fillText("Ready player?", 320, 240);
+            draw_head();
+            set_point_cords();
+            draw_point();
+        }
+
+        function keyListener(e) {
+            if (welcome_screen) {
+                ctx.clearRect(0, 0, 640, 480);
+                welcome_screen = false;
+                interval = window.setInterval(redraw, interval_time);
+            }
+
+            if (!was_moven_in_frame) {
+                switch (e.keyCode) {
+                    case 37: // strzałka w lewo
+                        direction = turn("l")
+                        break;
+                    case 38: //strzałka w górę
+                        direction = turn("u")
+                        break;
+                    case 39: //strzałka w prawo
+                        direction = turn("r")
+                        break;
+                    case 40: //strzałka w dół
+                        direction = turn("d")
+                        break;
+                }
+            }
+        }
+
+        function turn(dir) {
+            switch (dir) {
+                case "l":
+                    was_moven_in_frame = true;
+                    if (Math.abs(direction[0]) != 25)
+                        return [-25, 0];
+                    else return direction;
+                    break;
+                case "r":
+                    was_moven_in_frame = true;
+                    if (Math.abs(direction[0]) != 25)
+                        return [25, 0];
+                    else return direction;
+                    break;
+                case "u":
+                    was_moven_in_frame = true;
+                    if (Math.abs(direction[1]) != 25)
+                        return [0, -25];
+                    else return direction;
+                    break;
+                case "d":
+                    was_moven_in_frame = true;
+                    if (Math.abs(direction[1]) != 25)
+                        return [0, 25];
+                    else return direction;
+                    break;
+            }
+        }
+
+        function end_game() {
+            var button = document.createElement("button");
+            button.innerText = "Try again";
+            button.onclick = restart;
+            document.getElementById("buttonfield").appendChild(button);
+        }
+
+        function restart(){
+            pos_x = 250;
+            pos_y = 300;
+            is_point_on_map = true;
+            body = [];
+            body_cords = [[]];
+            interval_time = 500;
+            was_moven_in_frame = false;
+            points_collected = 0;
+            welcome_screen = true;
+            document.getElementById("points").innerHTML = '';
+            ctx.clearRect(0, 0, 640, 480);
+            document.getElementById("buttonfield").innerHTML = '';
+            init();
+        }
+    </script>
+</head>
+
+<body onload="init()">
+    <div id="main">
+        <canvas id="game" width="640" height="480">
+        </canvas>
+        <div id="points"></div>
+        <!-- <div id="custom-panel">
+            Kolor wenża: <input type="color" id="snake-color" value="#ff6400">
+        </div> -->
+        <div id="buttonfield"></div>
+    </div>
+</body>
+
+</html>
